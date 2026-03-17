@@ -162,7 +162,7 @@ test "end to end" {
         try std.testing.expectEqual(0, c.git_revwalk_push_head(walker));
 
         // init commits list
-        var commits = std.ArrayList(?*c.git_commit){};
+        var commits: std.ArrayList(?*c.git_commit) = .empty;
         defer {
             for (commits.items) |commit| {
                 c.git_commit_free(commit);

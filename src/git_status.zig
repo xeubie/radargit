@@ -59,8 +59,8 @@ pub fn GitStatusListItem(comptime Widget: type) type {
 
             var box = try wgt.Box(Widget).init(allocator, null, .horiz);
             errdefer box.deinit();
-            try box.children.put(status_text.getFocus().id, .{ .widget = .{ .text_box = status_text }, .rect = null, .min_size = null });
-            try box.children.put(path_text.getFocus().id, .{ .widget = .{ .text_box = path_text }, .rect = null, .min_size = null });
+            try box.children.put(box.allocator, status_text.getFocus().id, .{ .widget = .{ .text_box = status_text }, .rect = null, .min_size = null });
+            try box.children.put(box.allocator, path_text.getFocus().id, .{ .widget = .{ .text_box = path_text }, .rect = null, .min_size = null });
 
             return .{
                 .box = box,
@@ -113,7 +113,7 @@ pub fn GitStatusList(comptime Widget: type) type {
                 var list_item = try GitStatusListItem(Widget).init(allocator, item);
                 errdefer list_item.deinit();
                 list_item.getFocus().focusable = true;
-                try inner_box.children.put(list_item.getFocus().id, .{ .widget = .{ .git_status_list_item = list_item }, .rect = null, .min_size = null });
+                try inner_box.children.put(inner_box.allocator, list_item.getFocus().id, .{ .widget = .{ .git_status_list_item = list_item }, .rect = null, .min_size = null });
             }
 
             // init scroll
@@ -259,7 +259,7 @@ pub fn GitStatusTabs(comptime Widget: type) type {
                 var text_box = try wgt.TextBox(Widget).init(allocator, label, .single, .none);
                 errdefer text_box.deinit();
                 text_box.getFocus().focusable = true;
-                try box.children.put(text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
+                try box.children.put(box.allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
             }
 
             var git_status_tabs = GitStatusTabs(Widget){
@@ -345,7 +345,7 @@ pub fn GitStatusContent(comptime Widget: type) type {
         const FocusKind = enum { status_list, diff };
 
         pub fn init(allocator: std.mem.Allocator, repo: ?*c.git_repository, statuses: []Status, selected: IndexKind) !GitStatusContent(Widget) {
-            var filtered_statuses = std.ArrayList(Status){};
+            var filtered_statuses: std.ArrayList(Status) = .empty;
             errdefer filtered_statuses.deinit(allocator);
             for (statuses) |status| {
                 if (status.kind == selected) {
@@ -362,13 +362,13 @@ pub fn GitStatusContent(comptime Widget: type) type {
                     .status_list => {
                         var status_list = try GitStatusList(Widget).init(allocator, filtered_statuses.items);
                         errdefer status_list.deinit();
-                        try box.children.put(status_list.getFocus().id, .{ .widget = .{ .git_status_list = status_list }, .rect = null, .min_size = .{ .width = 20, .height = null } });
+                        try box.children.put(box.allocator, status_list.getFocus().id, .{ .widget = .{ .git_status_list = status_list }, .rect = null, .min_size = .{ .width = 20, .height = null } });
                     },
                     .diff => {
                         var diff = try g_diff.GitDiff(Widget).init(allocator, repo);
                         errdefer diff.deinit();
                         diff.getFocus().focusable = true;
-                        try box.children.put(diff.getFocus().id, .{ .widget = .{ .git_diff = diff }, .rect = null, .min_size = .{ .width = 60, .height = null } });
+                        try box.children.put(box.allocator, diff.getFocus().id, .{ .widget = .{ .git_diff = diff }, .rect = null, .min_size = .{ .width = 60, .height = null } });
                     },
                 }
             }
@@ -571,7 +571,7 @@ pub fn GitStatus(comptime Widget: type) type {
             const entry_count = c.git_status_list_entrycount(status_list);
 
             // loop over results
-            var statuses = std.ArrayList(Status){};
+            var statuses: std.ArrayList(Status) = .empty;
             errdefer statuses.deinit(allocator);
             for (0..entry_count) |i| {
                 const entry = c.git_status_byindex(status_list, i);
@@ -613,7 +613,7 @@ pub fn GitStatus(comptime Widget: type) type {
                     .status_tabs => {
                         var status_tabs = try GitStatusTabs(Widget).init(allocator, statuses.items);
                         errdefer status_tabs.deinit();
-                        try box.children.put(status_tabs.getFocus().id, .{ .widget = .{ .git_status_tabs = status_tabs }, .rect = null, .min_size = null });
+                        try box.children.put(box.allocator, status_tabs.getFocus().id, .{ .widget = .{ .git_status_tabs = status_tabs }, .rect = null, .min_size = null });
                     },
                     .status_content => {
                         var stack = wgt.Stack(Widget).init(allocator);
@@ -623,10 +623,10 @@ pub fn GitStatus(comptime Widget: type) type {
                             const index_kind: IndexKind = @enumFromInt(index_kind_field.value);
                             var status_content = try GitStatusContent(Widget).init(allocator, repo, statuses.items, index_kind);
                             errdefer status_content.deinit();
-                            try stack.children.put(status_content.getFocus().id, .{ .git_status_content = status_content });
+                            try stack.children.put(stack.allocator, status_content.getFocus().id, .{ .git_status_content = status_content });
                         }
 
-                        try box.children.put(stack.getFocus().id, .{ .widget = .{ .stack = stack }, .rect = null, .min_size = null });
+                        try box.children.put(box.allocator, stack.getFocus().id, .{ .widget = .{ .stack = stack }, .rect = null, .min_size = null });
                     },
                 }
             }

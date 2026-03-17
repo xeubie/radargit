@@ -26,14 +26,14 @@ pub fn GitDiff(comptime Widget: type) type {
 
             var outer_box = try wgt.Box(Widget).init(allocator, .single, .vert);
             errdefer outer_box.deinit();
-            try outer_box.children.put(scroll.getFocus().id, .{ .widget = .{ .scroll = scroll }, .rect = null, .min_size = null });
+            try outer_box.children.put(outer_box.allocator, scroll.getFocus().id, .{ .widget = .{ .scroll = scroll }, .rect = null, .min_size = null });
 
             return .{
                 .box = outer_box,
                 .allocator = allocator,
                 .repo = repo,
-                .patches = std.ArrayList(?*c.git_patch){},
-                .bufs = std.ArrayList(c.git_buf){},
+                .patches = .empty,
+                .bufs = .empty,
             };
         }
 
@@ -172,7 +172,7 @@ pub fn GitDiff(comptime Widget: type) type {
             for (self.box.children.values()[0].widget.scroll.child.box.children.values()) |*child| {
                 child.widget.deinit();
             }
-            self.box.children.values()[0].widget.scroll.child.box.children.clearAndFree();
+            self.box.children.values()[0].widget.scroll.child.box.children.clearAndFree(self.allocator);
 
             // reset scroll position
             const widget = &self.box.children.values()[0].widget;
@@ -196,12 +196,12 @@ pub fn GitDiff(comptime Widget: type) type {
                 // dont' display diffs with invalid unicode
                 var text_box = try wgt.TextBox(Widget).init(self.allocator, "Diff omitted due to invalid unicode", .hidden, .none);
                 errdefer text_box.deinit();
-                try self.box.children.values()[0].widget.scroll.child.box.children.put(text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
+                try self.box.children.values()[0].widget.scroll.child.box.children.put(self.allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
             } else {
                 // add new diff widget
                 var text_box = try wgt.TextBox(Widget).init(self.allocator, content, .hidden, .none);
                 errdefer text_box.deinit();
-                try self.box.children.values()[0].widget.scroll.child.box.children.put(text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
+                try self.box.children.values()[0].widget.scroll.child.box.children.put(self.allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
             }
         }
 

@@ -29,7 +29,7 @@ pub fn GitUITabs(comptime Widget: type) type {
                 var text_box = try wgt.TextBox(Widget).init(allocator, name, .single, .none);
                 errdefer text_box.deinit();
                 text_box.getFocus().focusable = true;
-                try box.children.put(text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
+                try box.children.put(box.allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
             }
 
             var git_ui_tabs = GitUITabs(Widget){
@@ -118,7 +118,7 @@ pub fn GitUI(comptime Widget: type) type {
                     .tabs => {
                         var git_ui_tabs = try GitUITabs(Widget).init(allocator);
                         errdefer git_ui_tabs.deinit();
-                        try box.children.put(git_ui_tabs.getFocus().id, .{ .widget = .{ .git_ui_tabs = git_ui_tabs }, .rect = null, .min_size = null });
+                        try box.children.put(box.allocator, git_ui_tabs.getFocus().id, .{ .widget = .{ .git_ui_tabs = git_ui_tabs }, .rect = null, .min_size = null });
                     },
                     .stack => {
                         var stack = wgt.Stack(Widget).init(allocator);
@@ -127,16 +127,16 @@ pub fn GitUI(comptime Widget: type) type {
                         {
                             var git_log = try g_log.GitLog(Widget).init(allocator, repo);
                             errdefer git_log.deinit();
-                            try stack.children.put(git_log.getFocus().id, .{ .git_log = git_log });
+                            try stack.children.put(stack.allocator, git_log.getFocus().id, .{ .git_log = git_log });
                         }
 
                         {
                             var git_status = try g_stat.GitStatus(Widget).init(allocator, repo);
                             errdefer git_status.deinit();
-                            try stack.children.put(git_status.getFocus().id, .{ .git_status = git_status });
+                            try stack.children.put(stack.allocator, git_status.getFocus().id, .{ .git_status = git_status });
                         }
 
-                        try box.children.put(stack.getFocus().id, .{ .widget = .{ .stack = stack }, .rect = null, .min_size = null });
+                        try box.children.put(box.allocator, stack.getFocus().id, .{ .widget = .{ .stack = stack }, .rect = null, .min_size = null });
                     },
                 }
             }

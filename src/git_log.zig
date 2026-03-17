@@ -27,7 +27,7 @@ pub fn GitCommitList(comptime Widget: type) type {
                 std.debug.assert(0 == c.git_revwalk_push_head(walker));
 
                 // init commits
-                var commits = std.ArrayList(?*c.git_commit){};
+                var commits: std.ArrayList(?*c.git_commit) = .empty;
                 errdefer commits.deinit(allocator);
 
                 var inner_box = try wgt.Box(Widget).init(allocator, null, .vert);
@@ -184,7 +184,7 @@ pub fn GitCommitList(comptime Widget: type) type {
                         var text_box = try wgt.TextBox(Widget).init(self.allocator, line, .hidden, .none);
                         errdefer text_box.deinit();
                         text_box.getFocus().focusable = true;
-                        try inner_box.children.put(text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
+                        try inner_box.children.put(inner_box.allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
                     } else {
                         commits_remaining = false;
                         break;
@@ -214,7 +214,7 @@ pub fn GitLog(comptime Widget: type) type {
             {
                 var commit_list = try GitCommitList(Widget).init(allocator, repo);
                 errdefer commit_list.deinit();
-                try box.children.put(commit_list.getFocus().id, .{ .widget = .{ .git_commit_list = commit_list }, .rect = null, .min_size = .{ .width = 30, .height = null } });
+                try box.children.put(box.allocator, commit_list.getFocus().id, .{ .widget = .{ .git_commit_list = commit_list }, .rect = null, .min_size = .{ .width = 30, .height = null } });
             }
 
             // add diff
@@ -222,7 +222,7 @@ pub fn GitLog(comptime Widget: type) type {
                 var diff = try g_diff.GitDiff(Widget).init(allocator, repo);
                 errdefer diff.deinit();
                 diff.getFocus().focusable = true;
-                try box.children.put(diff.getFocus().id, .{ .widget = .{ .git_diff = diff }, .rect = null, .min_size = .{ .width = 60, .height = null } });
+                try box.children.put(box.allocator, diff.getFocus().id, .{ .widget = .{ .git_diff = diff }, .rect = null, .min_size = .{ .width = 60, .height = null } });
             }
 
             var git_log = GitLog(Widget){
