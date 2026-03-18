@@ -1,4 +1,4 @@
-//! you're looking at radar's hopeless attempt to implement
+//! you're looking at my hopeless attempt to implement
 //! a text UI for git. it can't possibly be worse then using
 //! the git CLI, right?
 
