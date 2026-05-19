@@ -18,13 +18,13 @@ pub fn GitDiff(comptime Widget: type) type {
         bufs: std.ArrayList(c.git_buf),
 
         pub fn init(allocator: std.mem.Allocator, repo: ?*c.git_repository) !GitDiff(Widget) {
-            var inner_box = try wgt.Box(Widget).init(allocator, null, .vert);
+            var inner_box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
             errdefer inner_box.deinit();
 
             var scroll = try wgt.Scroll(Widget).init(allocator, .{ .box = inner_box }, .both);
             errdefer scroll.deinit();
 
-            var outer_box = try wgt.Box(Widget).init(allocator, .single, .vert);
+            var outer_box = try wgt.Box(Widget).init(allocator, .{ .border_style = .single, .direction = .vert });
             errdefer outer_box.deinit();
             try outer_box.children.put(outer_box.allocator, scroll.getFocus().id, .{ .widget = .{ .scroll = scroll }, .rect = null, .min_size = null });
 
@@ -53,7 +53,7 @@ pub fn GitDiff(comptime Widget: type) type {
 
         pub fn build(self: *GitDiff(Widget), constraint: layout.Constraint, root_focus: *Focus) !void {
             self.clearGrid();
-            self.box.border_style = if (root_focus.grandchild_id == self.getFocus().id) .double else .single;
+            self.box.options.border_style = if (root_focus.grandchild_id == self.getFocus().id) .double else .single;
             try self.box.build(constraint, root_focus);
 
             // add another diff if necessary
@@ -194,12 +194,12 @@ pub fn GitDiff(comptime Widget: type) type {
 
             if (!std.unicode.utf8ValidateSlice(content)) {
                 // dont' display diffs with invalid unicode
-                var text_box = try wgt.TextBox(Widget).init(self.allocator, "Diff omitted due to invalid unicode", .hidden, .none);
+                var text_box = try wgt.TextBox(Widget).init(self.allocator, "Diff omitted due to invalid unicode", .{ .border_style = .hidden, .wrap_kind = .none });
                 errdefer text_box.deinit();
                 try self.box.children.values()[0].widget.scroll.child.box.children.put(self.allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
             } else {
                 // add new diff widget
-                var text_box = try wgt.TextBox(Widget).init(self.allocator, content, .hidden, .none);
+                var text_box = try wgt.TextBox(Widget).init(self.allocator, content, .{ .border_style = .hidden, .wrap_kind = .none });
                 errdefer text_box.deinit();
                 try self.box.children.values()[0].widget.scroll.child.box.children.put(self.allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
             }

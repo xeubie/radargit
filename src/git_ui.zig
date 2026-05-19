@@ -17,7 +17,7 @@ pub fn GitUITabs(comptime Widget: type) type {
         const FocusKind = enum { log, status };
 
         pub fn init(allocator: std.mem.Allocator) !GitUITabs(Widget) {
-            var box = try wgt.Box(Widget).init(allocator, null, .horiz);
+            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
             errdefer box.deinit();
 
             inline for (@typeInfo(FocusKind).@"enum".fields) |focus_kind_field| {
@@ -26,7 +26,7 @@ pub fn GitUITabs(comptime Widget: type) type {
                     .log => "log",
                     .status => "status",
                 };
-                var text_box = try wgt.TextBox(Widget).init(allocator, name, .single, .none);
+                var text_box = try wgt.TextBox(Widget).init(allocator, name, .{ .border_style = .single, .wrap_kind = .none });
                 errdefer text_box.deinit();
                 text_box.getFocus().focusable = true;
                 try box.children.put(box.allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
@@ -46,7 +46,7 @@ pub fn GitUITabs(comptime Widget: type) type {
         pub fn build(self: *GitUITabs(Widget), constraint: layout.Constraint, root_focus: *Focus) !void {
             self.clearGrid();
             for (self.box.children.keys(), self.box.children.values()) |id, *tab| {
-                tab.widget.text_box.border_style = if (self.getFocus().child_id == id)
+                tab.widget.text_box.options.border_style = if (self.getFocus().child_id == id)
                     (if (root_focus.grandchild_id == id) .double else .single)
                 else
                     .hidden;
@@ -109,7 +109,7 @@ pub fn GitUI(comptime Widget: type) type {
         const FocusKind = enum { tabs, stack };
 
         pub fn init(allocator: std.mem.Allocator, repo: ?*c.git_repository) !GitUI(Widget) {
-            var box = try wgt.Box(Widget).init(allocator, null, .vert);
+            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
             errdefer box.deinit();
 
             inline for (@typeInfo(FocusKind).@"enum".fields) |focus_kind_field| {
