@@ -22,6 +22,7 @@ pub fn build(b: *std.Build) !void {
                 .target = target,
                 .optimize = optimize,
             }),
+            .use_llvm = true,
         });
         exe.root_module.link_libc = true;
         exe.root_module.addIncludePath(b.path("deps/libgit2/include"));
