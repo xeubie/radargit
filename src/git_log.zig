@@ -126,6 +126,15 @@ pub fn GitCommitList(comptime Widget: type) type {
                                 }
                             }
                         },
+                        .mouse => |mouse| switch (mouse.action) {
+                            .scroll => |dir| switch (dir) {
+                                .up => index -|= 1,
+                                .down => if (index + 1 < children.count()) {
+                                    index += 1;
+                                },
+                            },
+                            else => {},
+                        },
                         else => {},
                     }
 
@@ -205,6 +214,7 @@ pub fn GitLog(comptime Widget: type) type {
         allocator: std.mem.Allocator,
         box: wgt.Box(Widget),
         repo: ?*c.git_repository,
+        diffed_commit_index: ?usize,
 
         pub fn init(allocator: std.mem.Allocator, repo: ?*c.git_repository) !GitLog(Widget) {
             var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
@@ -229,9 +239,10 @@ pub fn GitLog(comptime Widget: type) type {
                 .allocator = allocator,
                 .box = box,
                 .repo = repo,
+                .diffed_commit_index = null,
             };
             git_log.getFocus().child_id = box.children.keys()[0];
-            try git_log.updateDiff();
+            try git_log.refreshDiffIfNeeded();
 
             return git_log;
         }
@@ -242,6 +253,10 @@ pub fn GitLog(comptime Widget: type) type {
 
         pub fn build(self: *GitLog(Widget), constraint: layout.Constraint, root_focus: *Focus) !void {
             self.clearGrid();
+            // regenerate the diff only when the selected commit actually changed.
+            // doing this here (instead of in input) means a burst of scroll
+            // events only triggers one diff computation, per render cycle.
+            try self.refreshDiffIfNeeded();
             try self.box.build(constraint, root_focus);
         }
 
@@ -282,9 +297,6 @@ pub fn GitLog(comptime Widget: type) type {
                             else => {},
                         }
                         try child.input(key, root_focus);
-                        if (child.* == .git_commit_list) {
-                            try self.updateDiff();
-                        }
                         break :blk current_index;
                     };
 
@@ -327,6 +339,14 @@ pub fn GitLog(comptime Widget: type) type {
                 }
             }
             return true;
+        }
+
+        fn refreshDiffIfNeeded(self: *GitLog(Widget)) !void {
+            const commit_list = &self.box.children.values()[0].widget.git_commit_list;
+            const current = commit_list.getSelectedIndex();
+            if (current == self.diffed_commit_index) return;
+            try self.updateDiff();
+            self.diffed_commit_index = current;
         }
 
         fn updateDiff(self: *GitLog(Widget)) !void {

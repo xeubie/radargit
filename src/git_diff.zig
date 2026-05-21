@@ -139,6 +139,28 @@ pub fn GitDiff(comptime Widget: type) type {
                         }
                     }
                 },
+                .mouse => |mouse| switch (mouse.action) {
+                    .scroll => |dir| switch (dir) {
+                        .up => {
+                            if (self.box.children.values()[0].widget.scroll.y > 0) {
+                                self.box.children.values()[0].widget.scroll.y -= 1;
+                            }
+                        },
+                        .down => {
+                            if (self.box.children.values()[0].widget.scroll.grid) |scroll_grid| {
+                                const scroll_y = self.box.children.values()[0].widget.scroll.y;
+                                const u_scroll_y: usize = if (scroll_y >= 0) @intCast(scroll_y) else 0;
+                                if (self.box.children.values()[0].widget.scroll.child.box.grid) |inner_box_grid| {
+                                    const inner_box_height = inner_box_grid.size.height;
+                                    if (scroll_grid.size.height + u_scroll_y < inner_box_height) {
+                                        self.box.children.values()[0].widget.scroll.y += 1;
+                                    }
+                                }
+                            }
+                        },
+                    },
+                    else => {},
+                },
                 else => {},
             }
         }

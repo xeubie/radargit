@@ -181,6 +181,15 @@ pub fn GitStatusList(comptime Widget: type) type {
                                     }
                                 }
                             },
+                            .mouse => |mouse| switch (mouse.action) {
+                                .scroll => |dir| switch (dir) {
+                                    .up => break :blk current_index -| 1,
+                                    .down => if (current_index + 1 < children.count()) {
+                                        break :blk current_index + 1;
+                                    },
+                                },
+                                else => {},
+                            },
                             else => {},
                         }
                         break :blk current_index;
@@ -662,11 +671,24 @@ pub fn GitStatus(comptime Widget: type) type {
                 if (self.box.children.getIndex(child_id)) |current_index| {
                     const child = &self.box.children.values()[current_index].widget;
 
+                    // scroll wheel moves the selection across tabs/content just
+                    // like arrow up/down does
+                    const Direction = enum { up, down, none };
+                    const direction: Direction = switch (key) {
+                        .arrow_up => .up,
+                        .arrow_down => .down,
+                        .mouse => |mouse| if (mouse.action == .scroll)
+                            (if (mouse.action.scroll == .up) .up else .down)
+                        else
+                            .none,
+                        else => .none,
+                    };
+
                     var index = blk: {
                         switch (child.*) {
                             .git_status_tabs => {
                                 const status_tabs = &child.git_status_tabs;
-                                if (key == .arrow_down) {
+                                if (direction == .down) {
                                     break :blk @intFromEnum(FocusKind.status_content);
                                 } else {
                                     try status_tabs.input(key, root_focus);
@@ -675,7 +697,7 @@ pub fn GitStatus(comptime Widget: type) type {
                             .stack => {
                                 const stack = &child.stack;
                                 if (stack.getSelected()) |selected_widget| {
-                                    if (key == .arrow_up and selected_widget.git_status_content.scrolledToTop()) {
+                                    if (direction == .up and selected_widget.git_status_content.scrolledToTop()) {
                                         break :blk @intFromEnum(FocusKind.status_tabs);
                                     } else {
                                         try stack.input(key, root_focus);
