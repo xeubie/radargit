@@ -138,7 +138,7 @@ pub fn main() !void {
         var blocking = !grid_changed;
         while (try terminal.readKey(io, blocking)) |key| {
             switch (key) {
-                .codepoint => |cp| if (cp == 'q') return,
+                .escape => return,
                 .mouse => |mouse| {
                     if (mouse.action == .press and mouse.action.press == .left) {
                         const root_focus = root.getFocus();
