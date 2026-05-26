@@ -7,6 +7,7 @@ const c = main.c;
 test "end to end" {
     const temp_dir_name = "temp-test-end-to-end";
 
+    const io = std.testing.io;
     const allocator = std.testing.allocator;
 
     // start libgit
@@ -14,30 +15,31 @@ test "end to end" {
     defer _ = c.git_libgit2_shutdown();
 
     // get the current working directory path.
-    // we can't just call std.fs.cwd() all the time because we're
+    // we can't just call std.Io.Dir.cwd() all the time because we're
     // gonna change it later. and since defers run at the end,
-    // if you call std.fs.cwd() in them you're gonna have a bad time.
-    var cwd_path_buffer = [_]u8{0} ** std.fs.max_path_bytes;
-    const cwd_path = try std.fs.cwd().realpath(".", &cwd_path_buffer);
-    var cwd = try std.fs.openDirAbsolute(cwd_path, .{});
-    defer cwd.close();
+    // if you call std.Io.Dir.cwd() in them you're gonna have a bad time.
+    const cwd_path = try std.process.currentPathAlloc(io, allocator);
+    defer allocator.free(cwd_path);
+    var cwd = try std.Io.Dir.openDirAbsolute(io, cwd_path, .{});
+    defer cwd.close(io);
 
     // create the temp dir
-    if (cwd.openFile(temp_dir_name, .{})) |file| {
-        file.close();
-        try cwd.deleteTree(temp_dir_name);
+    if (cwd.openFile(io, temp_dir_name, .{})) |file| {
+        file.close(io);
+        try cwd.deleteTree(io, temp_dir_name);
     } else |_| {}
-    var temp_dir = try cwd.makeOpenPath(temp_dir_name, .{});
-    defer cwd.deleteTree(temp_dir_name) catch {};
-    defer temp_dir.close();
+    var temp_dir = try cwd.createDirPathOpen(io, temp_dir_name, .{});
+    defer cwd.deleteTree(io, temp_dir_name) catch {};
+    defer temp_dir.close(io);
 
     // create the repo dir
-    var repo_dir = try temp_dir.makeOpenPath("repo", .{});
-    defer repo_dir.close();
+    var repo_dir = try temp_dir.createDirPathOpen(io, "repo", .{});
+    defer repo_dir.close(io);
 
     // get repo path for libgit
-    var repo_path_buffer = [_]u8{0} ** std.fs.max_path_bytes;
-    const repo_path: [*c]const u8 = @ptrCast(try repo_dir.realpath(".", &repo_path_buffer));
+    const repo_path_z = try repo_dir.realPathFileAlloc(io, ".", allocator);
+    defer allocator.free(repo_path_z);
+    const repo_path: [*c]const u8 = @ptrCast(repo_path_z.ptr);
 
     // init repo
     var repo: ?*c.git_repository = null;
@@ -45,20 +47,20 @@ test "end to end" {
     defer c.git_repository_free(repo);
 
     // make sure the git dir was created
-    var git_dir = try repo_dir.openDir(".git", .{});
-    defer git_dir.close();
+    var git_dir = try repo_dir.openDir(io, ".git", .{});
+    defer git_dir.close(io);
 
     // add and commit
     {
         // make file
-        var hello_txt = try repo_dir.createFile("hello.txt", .{});
-        defer hello_txt.close();
-        try hello_txt.writeAll("hello, world!");
+        var hello_txt = try repo_dir.createFile(io, "hello.txt", .{});
+        defer hello_txt.close(io);
+        try hello_txt.writeStreamingAll(io, "hello, world!");
 
         // make file
-        var readme = try repo_dir.createFile("README", .{});
-        defer readme.close();
-        try readme.writeAll("My cool project");
+        var readme = try repo_dir.createFile(io, "README", .{});
+        defer readme.close(io);
+        try readme.writeStreamingAll(io, "My cool project");
 
         // add the files
         var index: ?*c.git_index = null;
@@ -95,18 +97,19 @@ test "end to end" {
     // add and commit
     {
         // make files
-        var license = try repo_dir.createFile("LICENSE", .{});
-        defer license.close();
-        try license.writeAll("do whatever you want");
-        var change_log = try repo_dir.createFile("CHANGELOG", .{});
-        defer change_log.close();
-        try change_log.writeAll("cha-cha-cha-changes");
+        var license = try repo_dir.createFile(io, "LICENSE", .{});
+        defer license.close(io);
+        try license.writeStreamingAll(io, "do whatever you want");
+        var change_log = try repo_dir.createFile(io, "CHANGELOG", .{});
+        defer change_log.close(io);
+        try change_log.writeStreamingAll(io, "cha-cha-cha-changes");
 
         // change file
-        const hello_txt = try repo_dir.openFile("hello.txt", .{ .mode = .read_write });
-        defer hello_txt.close();
-        try hello_txt.writeAll("goodbye, world!");
-        try hello_txt.setEndPos(try hello_txt.getPos());
+        const new_hello = "goodbye, world!";
+        const hello_txt = try repo_dir.openFile(io, "hello.txt", .{ .mode = .read_write });
+        defer hello_txt.close(io);
+        try hello_txt.writeStreamingAll(io, new_hello);
+        try hello_txt.setLength(io, new_hello.len);
 
         // add the files
         var index: ?*c.git_index = null;
@@ -224,36 +227,36 @@ test "end to end" {
     // status
     {
         // modify file
-        var readme = try repo_dir.openFile("README", .{ .mode = .read_write });
-        defer readme.close();
-        try readme.writeAll("My really cool project");
+        var readme = try repo_dir.openFile(io, "README", .{ .mode = .read_write });
+        defer readme.close(io);
+        try readme.writeStreamingAll(io, "My really cool project");
 
         // make dirs
-        var a_dir = try repo_dir.makeOpenPath("a", .{});
-        defer a_dir.close();
-        var b_dir = try repo_dir.makeOpenPath("b", .{});
-        defer b_dir.close();
-        var c_dir = try repo_dir.makeOpenPath("c", .{});
-        defer c_dir.close();
+        var a_dir = try repo_dir.createDirPathOpen(io, "a", .{});
+        defer a_dir.close(io);
+        var b_dir = try repo_dir.createDirPathOpen(io, "b", .{});
+        defer b_dir.close(io);
+        var c_dir = try repo_dir.createDirPathOpen(io, "c", .{});
+        defer c_dir.close(io);
 
         // make file in dir
-        var farewell_txt = try a_dir.createFile("farewell.txt", .{});
-        defer farewell_txt.close();
-        try farewell_txt.writeAll("Farewell");
+        var farewell_txt = try a_dir.createFile(io, "farewell.txt", .{});
+        defer farewell_txt.close(io);
+        try farewell_txt.writeStreamingAll(io, "Farewell");
 
         // delete file
-        try repo_dir.deleteFile("CHANGELOG");
+        try repo_dir.deleteFile(io, "CHANGELOG");
 
         // modify indexed files
-        const hello_txt = try repo_dir.openFile("hello.txt", .{ .mode = .read_write });
-        defer hello_txt.close();
-        try hello_txt.writeAll("hello, world again!");
-        try repo_dir.deleteFile("LICENSE");
+        const hello_txt = try repo_dir.openFile(io, "hello.txt", .{ .mode = .read_write });
+        defer hello_txt.close(io);
+        try hello_txt.writeStreamingAll(io, "hello, world again!");
+        try repo_dir.deleteFile(io, "LICENSE");
 
         // make file
-        var goodbye_txt = try repo_dir.createFile("goodbye.txt", .{});
-        defer goodbye_txt.close();
-        try goodbye_txt.writeAll("Goodbye");
+        var goodbye_txt = try repo_dir.createFile(io, "goodbye.txt", .{});
+        defer goodbye_txt.close(io);
+        try goodbye_txt.writeStreamingAll(io, "Goodbye");
 
         // add the files
         var index: ?*c.git_index = null;
@@ -369,7 +372,7 @@ test "end to end" {
     var leaf_id = root.getFocus().id;
     var iter = root.getFocus().children.iterator();
     while (iter.next()) |child| {
-        if (child.key_ptr.* > leaf_id and child.value_ptr.focusable) {
+        if (child.key_ptr.* > leaf_id and child.value_ptr.focus.focusable) {
             leaf_id = child.key_ptr.*;
         }
     }
