@@ -37,21 +37,21 @@ pub const Widget = union(enum) {
     git_ui_tabs: g_ui.GitUITabs(Widget),
     git_ui: g_ui.GitUI(Widget),
 
-    pub fn deinit(self: *Widget) void {
+    pub fn deinit(self: *Widget, allocator: std.mem.Allocator) void {
         switch (self.*) {
-            inline else => |*case| case.deinit(),
+            inline else => |*case| case.deinit(allocator),
         }
     }
 
-    pub fn build(self: *Widget, constraint: layout.Constraint, root_focus: *Focus) anyerror!void {
+    pub fn build(self: *Widget, allocator: std.mem.Allocator, constraint: layout.Constraint, root_focus: *Focus) anyerror!void {
         switch (self.*) {
-            inline else => |*case| try case.build(constraint, root_focus),
+            inline else => |*case| try case.build(allocator, constraint, root_focus),
         }
     }
 
-    pub fn input(self: *Widget, key: inp.Key, root_focus: *Focus) anyerror!void {
+    pub fn input(self: *Widget, allocator: std.mem.Allocator, key: inp.Key, root_focus: *Focus) anyerror!void {
         switch (self.*) {
-            inline else => |*case| try case.input(key, root_focus),
+            inline else => |*case| try case.input(allocator, key, root_focus),
         }
     }
 
@@ -102,10 +102,10 @@ pub fn main() !void {
 
     // init root widget
     var root = Widget{ .git_ui = try g_ui.GitUI(Widget).init(allocator, repo) };
-    defer root.deinit();
+    defer root.deinit(allocator);
 
     // set initial focus for root widget
-    try root.build(.{
+    try root.build(allocator, .{
         .min_size = .{ .width = null, .height = null },
         .max_size = .{ .width = 10, .height = 10 },
     }, root.getFocus());
@@ -155,16 +155,16 @@ pub fn main() !void {
                             }
                         }
                     } else {
-                        try root.input(key, root.getFocus());
+                        try root.input(allocator, key, root.getFocus());
                     }
                 },
-                else => try root.input(key, root.getFocus()),
+                else => try root.input(allocator, key, root.getFocus()),
             }
             blocking = false;
         }
 
         // rebuild widget
-        try root.build(.{
+        try root.build(allocator, .{
             .min_size = .{ .width = null, .height = null },
             .max_size = .{ .width = last_size.width, .height = last_size.height },
         }, root.getFocus());

@@ -357,8 +357,8 @@ test "end to end" {
 
     // create root widget
     var root = main.Widget{ .git_ui = try g_ui.GitUI(main.Widget).init(allocator, repo) };
-    defer root.deinit();
-    try root.build(.{
+    defer root.deinit(allocator);
+    try root.build(allocator, .{
         .min_size = .{ .width = null, .height = null },
         .max_size = .{ .width = 200, .height = 50 },
     }, root.getFocus());
