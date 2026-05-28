@@ -29,7 +29,7 @@ pub fn GitCommitList(comptime Widget: type) type {
                 var commits: std.ArrayList(?*c.git_commit) = .empty;
                 errdefer commits.deinit(allocator);
 
-                var inner_box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
+                var inner_box = wgt.Box(Widget).init(.{ .border_style = null, .direction = .vert });
                 errdefer inner_box.deinit(allocator);
 
                 // init scroll
@@ -212,7 +212,7 @@ pub fn GitLog(comptime Widget: type) type {
         diffed_commit_index: ?usize,
 
         pub fn init(allocator: std.mem.Allocator, repo: ?*c.git_repository) !GitLog(Widget) {
-            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
+            var box = wgt.Box(Widget).init(.{ .border_style = null, .direction = .horiz });
             errdefer box.deinit(allocator);
 
             // add commit list
