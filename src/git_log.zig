@@ -70,6 +70,17 @@ pub fn GitCommitList(comptime Widget: type) type {
             }
             try self.scroll.build(allocator, constraint, root_focus);
 
+            // re-anchor scroll on the selected commit so it stays visible
+            if (self.getSelectedIndex()) |idx| {
+                if (children.values()[idx].rect) |rect| {
+                    const prev_y = self.scroll.y;
+                    self.scroll.scrollToRect(rect);
+                    if (self.scroll.y != prev_y) {
+                        try self.scroll.build(allocator, constraint, root_focus);
+                    }
+                }
+            }
+
             // add more commits if necessary
             if (self.scroll.grid) |scroll_grid| {
                 const scroll_y = self.scroll.y;
@@ -186,10 +197,15 @@ pub fn GitCommitList(comptime Widget: type) type {
 
                         const inner_box = &self.scroll.child.box;
                         const line = std.mem.sliceTo(std.mem.sliceTo(c.git_commit_message(commit), 0), '\n');
-                        var text_box = try wgt.TextBox(Widget).init(allocator, line, .{ .border_style = .hidden, .wrap_kind = .none });
+                        var text_box = try wgt.TextBox(Widget).init(allocator, line, .{ .border_style = .hidden, .wrap_kind = .word });
                         errdefer text_box.deinit(allocator);
                         text_box.getFocus().focusable = true;
-                        try inner_box.children.put(allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
+                        try inner_box.children.put(allocator, text_box.getFocus().id, .{
+                            .widget = .{ .text_box = text_box },
+                            .rect = null,
+                            .min_size = null,
+                            .max_size = .{ .width = null, .height = 5 },
+                        });
                     } else {
                         commits_remaining = false;
                         break;
