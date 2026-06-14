@@ -369,10 +369,16 @@ pub fn GitLog(comptime Widget: type) type {
                 std.debug.assert(0 == c.git_tree_lookup(&commit_tree, self.repo, commit_oid));
                 defer c.git_tree_free(commit_tree);
 
+                // diff against the commit's actual first parent, read straight
+                // from the commit object, so it doesn't depend on the parent
+                // having been lazily loaded into the list. null for the root
+                // commit, which correctly diffs against an empty tree.
                 var prev_commit_tree: ?*c.git_tree = null;
 
-                if (commit_index < commit_list.commits.items.len - 1) {
-                    const prev_commit = commit_list.commits.items[commit_index + 1];
+                if (c.git_commit_parentcount(commit) > 0) {
+                    var prev_commit: ?*c.git_commit = null;
+                    std.debug.assert(0 == c.git_commit_parent(&prev_commit, commit, 0));
+                    defer c.git_commit_free(prev_commit);
                     const prev_commit_oid = c.git_commit_tree_id(prev_commit);
                     std.debug.assert(0 == c.git_tree_lookup(&prev_commit_tree, self.repo, prev_commit_oid));
                 }
