@@ -17,13 +17,13 @@ pub fn GitDiff(comptime Widget: type) type {
         bufs: std.ArrayList(c.git_buf),
 
         pub fn init(allocator: std.mem.Allocator, repo: ?*c.git_repository) !GitDiff(Widget) {
-            var inner_box = wgt.Box(Widget).init(.{ .border_style = null, .direction = .vert });
+            var inner_box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
             errdefer inner_box.deinit(allocator);
 
-            var scroll = try wgt.Scroll(Widget).init(allocator, .{ .box = inner_box }, .both);
+            var scroll = try wgt.Scroll(Widget).init(allocator, .{ .box = inner_box }, .{ .direction = .both });
             errdefer scroll.deinit(allocator);
 
-            var outer_box = wgt.Box(Widget).init(.{ .border_style = .single, .direction = .vert });
+            var outer_box = try wgt.Box(Widget).init(allocator, .{ .border_style = .single, .direction = .vert });
             errdefer outer_box.deinit(allocator);
             try outer_box.children.put(allocator, scroll.getFocus().id, .{ .widget = .{ .scroll = scroll }, .rect = null, .min_size = null });
 

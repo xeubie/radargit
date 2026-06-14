@@ -57,7 +57,7 @@ pub fn GitStatusListItem(comptime Widget: type) type {
             var path_text = try wgt.TextBox(Widget).init(allocator, status.path, .{ .border_style = .hidden, .wrap_kind = .none });
             errdefer path_text.deinit(allocator);
 
-            var box = wgt.Box(Widget).init(.{ .border_style = null, .direction = .horiz });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
             errdefer box.deinit(allocator);
             try box.children.put(allocator, status_text.getFocus().id, .{ .widget = .{ .text_box = status_text }, .rect = null, .min_size = null });
             try box.children.put(allocator, path_text.getFocus().id, .{ .widget = .{ .text_box = path_text }, .rect = null, .min_size = null });
@@ -108,7 +108,7 @@ pub fn GitStatusList(comptime Widget: type) type {
 
         pub fn init(allocator: std.mem.Allocator, statuses: []Status) !GitStatusList(Widget) {
             // init inner_box
-            var inner_box = wgt.Box(Widget).init(.{ .border_style = null, .direction = .vert });
+            var inner_box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
             errdefer inner_box.deinit(allocator);
             for (statuses) |item| {
                 var list_item = try GitStatusListItem(Widget).init(allocator, item);
@@ -118,7 +118,7 @@ pub fn GitStatusList(comptime Widget: type) type {
             }
 
             // init scroll
-            var scroll = try wgt.Scroll(Widget).init(allocator, .{ .box = inner_box }, .vert);
+            var scroll = try wgt.Scroll(Widget).init(allocator, .{ .box = inner_box }, .{ .direction = .vert });
             errdefer scroll.deinit(allocator);
             if (inner_box.children.count() > 0) {
                 scroll.getFocus().child_id = inner_box.children.keys()[0];
@@ -243,7 +243,7 @@ pub fn GitStatusTabs(comptime Widget: type) type {
         const tab_count = @typeInfo(IndexKind).@"enum".fields.len;
 
         pub fn init(allocator: std.mem.Allocator, statuses: []Status) !GitStatusTabs(Widget) {
-            var box = wgt.Box(Widget).init(.{ .border_style = null, .direction = .horiz });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
             errdefer box.deinit(allocator);
 
             var arena = std.heap.ArenaAllocator.init(allocator);
@@ -361,7 +361,7 @@ pub fn GitStatusContent(comptime Widget: type) type {
                 }
             }
 
-            var box = wgt.Box(Widget).init(.{ .border_style = null, .direction = .horiz });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
             errdefer box.deinit(allocator);
 
             inline for (@typeInfo(FocusKind).@"enum".fields) |focus_kind_field| {
@@ -610,7 +610,7 @@ pub fn GitStatus(comptime Widget: type) type {
             }
 
             // init box
-            var box = wgt.Box(Widget).init(.{ .border_style = null, .direction = .vert });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
             errdefer box.deinit(allocator);
 
             inline for (@typeInfo(FocusKind).@"enum".fields) |focus_kind_field| {
@@ -622,7 +622,7 @@ pub fn GitStatus(comptime Widget: type) type {
                         try box.children.put(allocator, status_tabs.getFocus().id, .{ .widget = .{ .git_status_tabs = status_tabs }, .rect = null, .min_size = null });
                     },
                     .status_content => {
-                        var stack = wgt.Stack(Widget).init();
+                        var stack = try wgt.Stack(Widget).init(allocator);
                         errdefer stack.deinit(allocator);
 
                         inline for (@typeInfo(IndexKind).@"enum".fields) |index_kind_field| {

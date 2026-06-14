@@ -17,7 +17,7 @@ pub fn GitUITabs(comptime Widget: type) type {
         const FocusKind = enum { log, status };
 
         pub fn init(allocator: std.mem.Allocator) !GitUITabs(Widget) {
-            var box = wgt.Box(Widget).init(.{ .border_style = null, .direction = .horiz });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
             errdefer box.deinit(allocator);
 
             inline for (@typeInfo(FocusKind).@"enum".fields) |focus_kind_field| {
@@ -107,7 +107,7 @@ pub fn GitUI(comptime Widget: type) type {
         const FocusKind = enum { tabs, stack };
 
         pub fn init(allocator: std.mem.Allocator, repo: ?*c.git_repository) !GitUI(Widget) {
-            var box = wgt.Box(Widget).init(.{ .border_style = null, .direction = .vert });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
             errdefer box.deinit(allocator);
 
             inline for (@typeInfo(FocusKind).@"enum".fields) |focus_kind_field| {
@@ -119,7 +119,7 @@ pub fn GitUI(comptime Widget: type) type {
                         try box.children.put(allocator, git_ui_tabs.getFocus().id, .{ .widget = .{ .git_ui_tabs = git_ui_tabs }, .rect = null, .min_size = null });
                     },
                     .stack => {
-                        var stack = wgt.Stack(Widget).init();
+                        var stack = try wgt.Stack(Widget).init(allocator);
                         errdefer stack.deinit(allocator);
 
                         {
