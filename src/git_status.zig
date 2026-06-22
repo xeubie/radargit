@@ -198,7 +198,7 @@ pub fn GitStatusList(comptime Widget: type) type {
                     };
 
                     if (index != current_index) {
-                        try root_focus.setFocus(children.keys()[index]);
+                        root_focus.setFocus(children.keys()[index]);
                         self.updateScroll(index);
                     }
                 }
@@ -315,7 +315,7 @@ pub fn GitStatusTabs(comptime Widget: type) type {
                     };
 
                     if (index != current_index) {
-                        try root_focus.setFocus(children.keys()[index]);
+                        root_focus.setFocus(children.keys()[index]);
                     }
                 }
             }
@@ -451,7 +451,7 @@ pub fn GitStatusContent(comptime Widget: type) type {
                     }
 
                     if (index != current_index) {
-                        try root_focus.setFocus(self.box.children.keys()[index]);
+                        root_focus.setFocus(self.box.children.keys()[index]);
                     }
                 }
             }
@@ -714,7 +714,7 @@ pub fn GitStatus(comptime Widget: type) type {
                     }
 
                     if (index != current_index) {
-                        try root_focus.setFocus(self.box.children.keys()[index]);
+                        root_focus.setFocus(self.box.children.keys()[index]);
                     }
                 }
             }

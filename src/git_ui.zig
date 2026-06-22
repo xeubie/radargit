@@ -71,7 +71,7 @@ pub fn GitUITabs(comptime Widget: type) type {
                     }
 
                     if (index != current_index) {
-                        try root_focus.setFocus(children.keys()[index]);
+                        root_focus.setFocus(children.keys()[index]);
                     }
                 }
             }
@@ -226,7 +226,7 @@ pub fn GitUI(comptime Widget: type) type {
                     }
 
                     if (index != current_index) {
-                        try root_focus.setFocus(self.box.children.keys()[index]);
+                        root_focus.setFocus(self.box.children.keys()[index]);
                     }
                 }
             }

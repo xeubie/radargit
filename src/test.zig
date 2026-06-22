@@ -378,6 +378,6 @@ test "end to end" {
     }
 
     // focus on widget
-    try root.getFocus().setFocus(leaf_id);
+    root.getFocus().setFocus(leaf_id);
     try std.testing.expectEqual(leaf_id, root.getFocus().grandchild_id);
 }

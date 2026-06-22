@@ -108,14 +108,11 @@ pub fn main() !void {
     var root = Widget{ .git_ui = try g_ui.GitUI(Widget).init(allocator, repo) };
     defer root.deinit(allocator);
 
-    // set initial focus for root widget
+    // build once so the root settles focus onto its initial child
     try root.build(allocator, .{
         .min_size = .{ .width = null, .height = null },
         .max_size = .{ .width = 10, .height = 10 },
     }, root.getFocus());
-    if (root.getFocus().child_id) |child_id| {
-        try root.getFocus().setFocus(child_id);
-    }
 
     // init term
     var terminal = try term.Terminal.init(io, allocator);
@@ -160,7 +157,7 @@ pub fn main() !void {
                             if (mouse.x >= r.x and mouse.y >= r.y and
                                 mouse.x < r.x + r.size.width and mouse.y < r.y + r.size.height)
                             {
-                                try root_focus.setFocus(entry.key_ptr.*);
+                                root_focus.setFocus(entry.key_ptr.*);
                                 break;
                             }
                         }
