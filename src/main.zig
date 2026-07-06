@@ -146,6 +146,41 @@ pub fn main() !void {
             blocking = false;
             switch (key) {
                 .escape => return,
+                .ctrl => |letter| switch (letter) {
+                    // ctrl+r: refresh by reopening the repo and recreating
+                    // the root widget, preserving the currently selected tab
+                    'r' => {
+                        var new_repo: ?*c.git_repository = null;
+                        std.debug.assert(0 == c.git_repository_init(&new_repo, cwd_path.ptr, 0));
+
+                        const new_git_ui = g_ui.GitUI(Widget).init(allocator, new_repo) catch |err| {
+                            c.git_repository_free(new_repo);
+                            return err;
+                        };
+
+                        const tab_index = root.git_ui.box.children.values()[0].widget.git_ui_tabs.getSelectedIndex();
+
+                        // deinit the old root before freeing the old repo,
+                        // because its widgets hold libgit2 objects that must
+                        // not outlive their repository
+                        root.deinit(allocator);
+                        root = Widget{ .git_ui = new_git_ui };
+                        c.git_repository_free(repo);
+                        repo = new_repo;
+
+                        // build once so the root settles focus onto its
+                        // initial child, then restore the selected tab
+                        try root.build(allocator, .{
+                            .min_size = .{ .width = null, .height = null },
+                            .max_size = .{ .width = 10, .height = 10 },
+                        }, root.getFocus());
+                        if (tab_index) |index| {
+                            const tabs = &root.git_ui.box.children.values()[0].widget.git_ui_tabs;
+                            root.getFocus().setFocus(tabs.box.children.keys()[index]);
+                        }
+                    },
+                    else => try root.input(allocator, key, root.getFocus()),
+                },
                 .mouse => |mouse| {
                     if (mouse.action == .press and mouse.action.press == .left) {
                         const root_focus = root.getFocus();
