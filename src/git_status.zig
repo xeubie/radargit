@@ -2,10 +2,11 @@ const std = @import("std");
 const xitui = @import("xitui");
 const wgt = xitui.widget;
 const layout = xitui.layout;
-const inp = xitui.input;
+const Key = xitui.input.Key;
 const Grid = xitui.grid.Grid;
 const Focus = xitui.focus.Focus;
 const g_diff = @import("./git_diff.zig");
+const inp = @import("./input.zig");
 const g_ui = @import("./git_ui.zig");
 
 const c = @import("./main.zig").c;
@@ -76,7 +77,7 @@ pub fn GitStatusListItem(comptime Widget: type) type {
             try self.box.build(allocator, constraint, root_focus);
         }
 
-        pub fn input(self: *GitStatusListItem(Widget), allocator: std.mem.Allocator, key: inp.Key, root_focus: *Focus) !void {
+        pub fn input(self: *GitStatusListItem(Widget), allocator: std.mem.Allocator, key: Key, root_focus: *Focus) !void {
             _ = self;
             _ = allocator;
             _ = key;
@@ -146,56 +147,12 @@ pub fn GitStatusList(comptime Widget: type) type {
             try self.scroll.build(allocator, constraint, root_focus);
         }
 
-        pub fn input(self: *GitStatusList(Widget), allocator: std.mem.Allocator, key: inp.Key, root_focus: *Focus) !void {
+        pub fn input(self: *GitStatusList(Widget), allocator: std.mem.Allocator, key: Key, root_focus: *Focus) !void {
             _ = allocator;
             if (self.getFocus().child_id) |child_id| {
                 const children = &self.scroll.child.box.children;
                 if (children.getIndex(child_id)) |current_index| {
-                    const index = blk: {
-                        switch (key) {
-                            .arrow_up => {
-                                break :blk current_index - 1;
-                            },
-                            .arrow_down => {
-                                if (current_index + 1 < children.count()) {
-                                    break :blk current_index + 1;
-                                }
-                            },
-                            .home => {
-                                break :blk 0;
-                            },
-                            .end => {
-                                if (children.count() > 0) {
-                                    break :blk children.count() - 1;
-                                }
-                            },
-                            .page_up => {
-                                if (self.getGrid()) |grid| {
-                                    const half_count = (grid.size.height / 3) / 2;
-                                    break :blk current_index -| half_count;
-                                }
-                            },
-                            .page_down => {
-                                if (self.getGrid()) |grid| {
-                                    if (children.count() > 0) {
-                                        const half_count = (grid.size.height / 3) / 2;
-                                        break :blk @min(current_index + half_count, children.count() - 1);
-                                    }
-                                }
-                            },
-                            .mouse => |mouse| switch (mouse.action) {
-                                .scroll => |dir| switch (dir) {
-                                    .up => break :blk current_index -| 1,
-                                    .down => if (current_index + 1 < children.count()) {
-                                        break :blk current_index + 1;
-                                    },
-                                },
-                                else => {},
-                            },
-                            else => {},
-                        }
-                        break :blk current_index;
-                    };
+                    const index = inp.vertIndex(key, current_index, children.count(), self.getGrid());
 
                     if (index != current_index) {
                         root_focus.setFocus(children.keys()[index]);
@@ -294,7 +251,7 @@ pub fn GitStatusTabs(comptime Widget: type) type {
             try self.box.build(allocator, constraint, root_focus);
         }
 
-        pub fn input(self: *GitStatusTabs(Widget), allocator: std.mem.Allocator, key: inp.Key, root_focus: *Focus) !void {
+        pub fn input(self: *GitStatusTabs(Widget), allocator: std.mem.Allocator, key: Key, root_focus: *Focus) !void {
             _ = allocator;
             if (self.getFocus().child_id) |child_id| {
                 const children = &self.box.children;
@@ -403,42 +360,14 @@ pub fn GitStatusContent(comptime Widget: type) type {
             }
         }
 
-        pub fn input(self: *GitStatusContent(Widget), allocator: std.mem.Allocator, key: inp.Key, root_focus: *Focus) !void {
+        pub fn input(self: *GitStatusContent(Widget), allocator: std.mem.Allocator, key: Key, root_focus: *Focus) !void {
             const diff_scroll_x = self.box.children.values()[1].widget.git_diff.getScrollX();
 
             if (self.getFocus().child_id) |child_id| {
                 if (self.box.children.getIndex(child_id)) |current_index| {
                     const child = &self.box.children.values()[current_index].widget;
 
-                    var index = blk: {
-                        switch (key) {
-                            .arrow_left => {
-                                if (child.* == .git_diff and diff_scroll_x == 0) {
-                                    break :blk @intFromEnum(FocusKind.status_list);
-                                }
-                            },
-                            .arrow_right => {
-                                if (child.* == .git_status_list) {
-                                    break :blk @intFromEnum(FocusKind.diff);
-                                }
-                            },
-                            .codepoint => {
-                                switch (key.codepoint) {
-                                    13 => {
-                                        if (child.* == .git_status_list) {
-                                            break :blk @intFromEnum(FocusKind.status_list);
-                                        }
-                                    },
-                                    127, '\x1B' => {
-                                        if (child.* == .git_diff) {
-                                            break :blk @intFromEnum(FocusKind.diff);
-                                        }
-                                    },
-                                    else => {},
-                                }
-                            },
-                            else => {},
-                        }
+                    var index = inp.horizIndex(key, child.* == .git_status_list, diff_scroll_x) orelse blk: {
                         try child.input(allocator, key, root_focus);
                         if (child.* == .git_status_list) {
                             try self.updateDiff(allocator);
@@ -662,7 +591,7 @@ pub fn GitStatus(comptime Widget: type) type {
             try self.box.build(allocator, constraint, root_focus);
         }
 
-        pub fn input(self: *GitStatus(Widget), allocator: std.mem.Allocator, key: inp.Key, root_focus: *Focus) !void {
+        pub fn input(self: *GitStatus(Widget), allocator: std.mem.Allocator, key: Key, root_focus: *Focus) !void {
             if (self.getFocus().child_id) |child_id| {
                 if (self.box.children.getIndex(child_id)) |current_index| {
                     const child = &self.box.children.values()[current_index].widget;

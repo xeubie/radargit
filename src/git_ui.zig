@@ -2,7 +2,7 @@ const std = @import("std");
 const xitui = @import("xitui");
 const wgt = xitui.widget;
 const layout = xitui.layout;
-const inp = xitui.input;
+const Key = xitui.input.Key;
 const Grid = xitui.grid.Grid;
 const Focus = xitui.focus.Focus;
 const g_stat = @import("./git_status.zig");
@@ -51,7 +51,7 @@ pub fn GitUITabs(comptime Widget: type) type {
             try self.box.build(allocator, constraint, root_focus);
         }
 
-        pub fn input(self: *GitUITabs(Widget), allocator: std.mem.Allocator, key: inp.Key, root_focus: *Focus) !void {
+        pub fn input(self: *GitUITabs(Widget), allocator: std.mem.Allocator, key: Key, root_focus: *Focus) !void {
             _ = allocator;
             if (self.getFocus().child_id) |child_id| {
                 const children = &self.box.children;
@@ -160,7 +160,7 @@ pub fn GitUI(comptime Widget: type) type {
             try self.box.build(allocator, constraint, root_focus);
         }
 
-        pub fn input(self: *GitUI(Widget), allocator: std.mem.Allocator, key: inp.Key, root_focus: *Focus) !void {
+        pub fn input(self: *GitUI(Widget), allocator: std.mem.Allocator, key: Key, root_focus: *Focus) !void {
             if (self.getFocus().child_id) |child_id| {
                 if (self.box.children.getIndex(child_id)) |current_index| {
                     const child = &self.box.children.values()[current_index].widget;

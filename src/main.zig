@@ -8,7 +8,7 @@ const xitui = @import("xitui");
 const term = xitui.terminal;
 const wgt = xitui.widget;
 const layout = xitui.layout;
-const inp = xitui.input;
+const Key = xitui.input.Key;
 const Grid = xitui.grid.Grid;
 const Focus = xitui.focus.Focus;
 const g_diff = @import("./git_diff.zig");
@@ -53,7 +53,7 @@ pub const Widget = union(enum) {
         }
     }
 
-    pub fn input(self: *Widget, allocator: std.mem.Allocator, key: inp.Key, root_focus: *Focus) anyerror!void {
+    pub fn input(self: *Widget, allocator: std.mem.Allocator, key: Key, root_focus: *Focus) anyerror!void {
         switch (self.*) {
             inline else => |*case| try case.input(allocator, key, root_focus),
         }

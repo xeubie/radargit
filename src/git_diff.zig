@@ -3,7 +3,7 @@ const xitui = @import("xitui");
 const term = xitui.terminal;
 const wgt = xitui.widget;
 const layout = xitui.layout;
-const inp = xitui.input;
+const Key = xitui.input.Key;
 const Grid = xitui.grid.Grid;
 const Focus = xitui.focus.Focus;
 
@@ -70,7 +70,7 @@ pub fn GitDiff(comptime Widget: type) type {
             }
         }
 
-        pub fn input(self: *GitDiff(Widget), allocator: std.mem.Allocator, key: inp.Key, root_focus: *Focus) !void {
+        pub fn input(self: *GitDiff(Widget), allocator: std.mem.Allocator, key: Key, root_focus: *Focus) !void {
             _ = allocator;
             _ = root_focus;
             switch (key) {
