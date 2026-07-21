@@ -202,7 +202,7 @@ pub fn GitLog(comptime Widget: type) type {
 
             // add diff
             {
-                var diff = try g_diff.GitDiff(Widget).init(allocator, repo);
+                var diff = try g_diff.GitDiff(Widget).init(allocator);
                 errdefer diff.deinit(allocator);
                 diff.getFocus().focusable = true;
                 try box.children.put(allocator, diff.getFocus().id, .{ .widget = .{ .git_diff = diff }, .rect = null, .min_size = .{ .width = diff_min_width, .height = null } });

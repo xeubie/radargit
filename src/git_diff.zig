@@ -1,6 +1,5 @@
 const std = @import("std");
 const xitui = @import("xitui");
-const term = xitui.terminal;
 const wgt = xitui.widget;
 const layout = xitui.layout;
 const Key = xitui.input.Key;
@@ -12,11 +11,10 @@ const c = @import("./main.zig").c;
 pub fn GitDiff(comptime Widget: type) type {
     return struct {
         box: wgt.Box(Widget),
-        repo: ?*c.git_repository,
         patches: std.ArrayList(?*c.git_patch),
         bufs: std.ArrayList(c.git_buf),
 
-        pub fn init(allocator: std.mem.Allocator, repo: ?*c.git_repository) !GitDiff(Widget) {
+        pub fn init(allocator: std.mem.Allocator) !GitDiff(Widget) {
             var inner_box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
             errdefer inner_box.deinit(allocator);
 
@@ -29,7 +27,6 @@ pub fn GitDiff(comptime Widget: type) type {
 
             return .{
                 .box = outer_box,
-                .repo = repo,
                 .patches = .empty,
                 .bufs = .empty,
             };

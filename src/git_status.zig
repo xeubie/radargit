@@ -7,8 +7,6 @@ const Grid = xitui.grid.Grid;
 const Focus = xitui.focus.Focus;
 const g_diff = @import("./git_diff.zig");
 const inp = @import("./input.zig");
-const g_ui = @import("./git_ui.zig");
-
 const c = @import("./main.zig").c;
 
 pub const IndexKind = enum {
@@ -330,7 +328,7 @@ pub fn GitStatusContent(comptime Widget: type) type {
                         try box.children.put(allocator, status_list.getFocus().id, .{ .widget = .{ .git_status_list = status_list }, .rect = null, .min_size = .{ .width = 20, .height = null } });
                     },
                     .diff => {
-                        var diff = try g_diff.GitDiff(Widget).init(allocator, repo);
+                        var diff = try g_diff.GitDiff(Widget).init(allocator);
                         errdefer diff.deinit(allocator);
                         diff.getFocus().focusable = true;
                         try box.children.put(allocator, diff.getFocus().id, .{ .widget = .{ .git_diff = diff }, .rect = null, .min_size = .{ .width = 60, .height = null } });

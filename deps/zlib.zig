@@ -1,12 +1,9 @@
 const std = @import("std");
-const Self = @This();
-
 fn root() []const u8 {
     return std.fs.path.dirname(@src().file) orelse ".";
 }
 
 const root_path = root() ++ "/";
-const package_path = root_path ++ "src/main.zig";
 pub const include_dir = root_path ++ "zlib";
 
 pub const Library = struct {
