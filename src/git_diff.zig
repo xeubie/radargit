@@ -196,7 +196,27 @@ pub fn GitDiff(comptime Widget: type) type {
             const content = std.mem.sliceTo(buf.ptr, 0);
 
             const display_text = if (std.unicode.utf8ValidateSlice(content)) content else "Diff omitted due to invalid unicode";
-            var text_box = try wgt.TextBox.init(allocator, display_text, .{ .border_style = .hidden, .wrap_kind = .none });
+
+            // one span per line: added lines green, removed lines red. the
+            // text box copies the text, so the spans only live until init.
+            var spans: std.ArrayList(wgt.Span) = .empty;
+            defer spans.deinit(allocator);
+            var start: usize = 0;
+            while (start < display_text.len) {
+                // each span keeps its trailing newline so the text box still breaks there
+                const end = if (std.mem.indexOfScalarPos(u8, display_text, start, '\n')) |nl| nl + 1 else display_text.len;
+                const line = display_text[start..end];
+                const style: wgt.Style = if (std.mem.startsWith(u8, line, "+"))
+                    .{ .fg = .{ .ansi = .green } }
+                else if (std.mem.startsWith(u8, line, "-"))
+                    .{ .fg = .{ .ansi = .red } }
+                else
+                    .{};
+                try spans.append(allocator, .{ .text = line, .style = style });
+                start = end;
+            }
+
+            var text_box = try wgt.TextBox.initSpans(allocator, spans.items, .{ .border_style = .hidden, .wrap_kind = .none });
             errdefer text_box.deinit(allocator);
             try self.box.children.values()[0].widget.scroll.child.box.children.put(allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
             self.diff_count += 1;
