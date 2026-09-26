@@ -76,7 +76,7 @@ pub fn GitCommitList(comptime Widget: type) type {
             for (children.keys(), children.values()) |id, *commit| {
                 const selected = self.getFocus().child_id == id;
                 commit.widget.text_box.options.border_style = if (selected) .single else .hidden;
-                commit.widget.text_box.options.inverted = selected;
+                commit.widget.text_box.options.invert = selected;
             }
             try self.scroll.build(allocator, constraint, root_focus);
 
