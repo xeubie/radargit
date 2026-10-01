@@ -197,16 +197,22 @@ pub fn GitDiff(comptime Widget: type) type {
 
             const display_text = if (std.unicode.utf8ValidateSlice(content)) content else "Diff omitted due to invalid unicode";
 
-            // one span per line: added lines green, removed lines red. the
-            // text box copies the text, so the spans only live until init.
+            // one span per line: header lines bold, added lines green, removed
+            // lines red. the text box copies the text, so the spans only live
+            // until init.
             var spans: std.ArrayList(wgt.Span) = .empty;
             defer spans.deinit(allocator);
             var start: usize = 0;
+            // the header is everything before the first hunk
+            var in_header = true;
             while (start < display_text.len) {
                 // each span keeps its trailing newline so the text box still breaks there
                 const end = if (std.mem.indexOfScalarPos(u8, display_text, start, '\n')) |nl| nl + 1 else display_text.len;
                 const line = display_text[start..end];
-                const style: wgt.Style = if (std.mem.startsWith(u8, line, "+"))
+                if (std.mem.startsWith(u8, line, "@@")) in_header = false;
+                const style: wgt.Style = if (in_header)
+                    .{ .bold = true }
+                else if (std.mem.startsWith(u8, line, "+"))
                     .{ .fg = .{ .ansi = .green } }
                 else if (std.mem.startsWith(u8, line, "-"))
                     .{ .fg = .{ .ansi = .red } }

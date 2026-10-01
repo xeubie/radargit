@@ -86,7 +86,7 @@ fn openRepo(path: [*:0]const u8) !*c.git_repository {
     return repo.?;
 }
 
-pub fn main() !void {
+pub fn main(init: std.process.Init.Minimal) !void {
     // start libgit
     _ = c.git_libgit2_init();
     defer _ = c.git_libgit2_shutdown();
@@ -124,6 +124,7 @@ pub fn main() !void {
     // init term
     var terminal = try term.Terminal.init(io, allocator);
     defer terminal.deinit(io);
+    terminal.render_state.no_color = init.environ.containsUnemptyConstant("NO_COLOR");
 
     // set term as active so it will be properly cooked
     // when a panic/segfault happens
