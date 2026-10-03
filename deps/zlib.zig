@@ -1,6 +1,6 @@
 const std = @import("std");
 fn root() []const u8 {
-    return std.fs.path.dirname(@src().file) orelse ".";
+    return std.Io.Dir.path.dirname(@src().file) orelse ".";
 }
 
 const root_path = root() ++ "/";
@@ -10,12 +10,12 @@ pub const Library = struct {
     step: *std.Build.Step.Compile,
 
     pub fn link(self: Library, other: *std.Build.Step.Compile) void {
-        other.root_module.addIncludePath(.{ .cwd_relative = include_dir });
+        other.root_module.addIncludePath(other.step.owner.graph.cwdRelativePath(include_dir));
         other.root_module.linkLibrary(self.step);
     }
 };
 
-pub fn create(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) Library {
+pub fn create(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.lang.Optimize) Library {
     var ret = b.addLibrary(.{
         .name = "z",
         .root_module = b.createModule(.{
@@ -25,7 +25,7 @@ pub fn create(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.bui
     });
     ret.root_module.link_libc = true;
     ret.root_module.addCSourceFiles(.{
-        .root = .{ .cwd_relative = root() },
+        .root = b.graph.cwdRelativePath(root()),
         .files = srcs,
         .flags = &.{"-std=c89"},
     });

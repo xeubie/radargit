@@ -1,7 +1,7 @@
 const std = @import("std");
 
 fn root() []const u8 {
-    return std.fs.path.dirname(@src().file) orelse unreachable;
+    return std.Io.Dir.path.dirname(@src().file) orelse unreachable;
 }
 
 const root_path = root() ++ "/";
@@ -11,7 +11,7 @@ pub const Library = struct {
     step: *std.Build.Step.Compile,
 
     pub fn link(self: Library, other: *std.Build.Step.Compile) void {
-        other.root_module.addIncludePath(.{ .cwd_relative = include_dir });
+        other.root_module.addIncludePath(other.step.owner.graph.cwdRelativePath(include_dir));
         other.root_module.linkLibrary(self.step);
     }
 };
@@ -19,7 +19,7 @@ pub const Library = struct {
 pub fn create(
     b: *std.Build,
     target: std.Build.ResolvedTarget,
-    optimize: std.builtin.OptimizeMode,
+    optimize: std.lang.Optimize,
 ) !Library {
     var ret = b.addLibrary(.{
         .name = "git2",
@@ -60,7 +60,7 @@ pub fn create(
     }
 
     ret.root_module.addCSourceFiles(.{
-        .root = .{ .cwd_relative = root() },
+        .root = b.graph.cwdRelativePath(root()),
         .files = srcs,
         .flags = flags.items,
     });
@@ -71,26 +71,26 @@ pub fn create(
             "-DGIT_WINHTTP",
         });
         ret.root_module.addCSourceFiles(.{
-            .root = .{ .cwd_relative = root() },
+            .root = b.graph.cwdRelativePath(root()),
             .files = win32_srcs,
             .flags = flags.items,
         });
         ret.root_module.linkSystemLibrary("secur32", .{});
     } else {
         ret.root_module.addCSourceFiles(.{
-            .root = .{ .cwd_relative = root() },
+            .root = b.graph.cwdRelativePath(root()),
             .files = posix_srcs,
             .flags = flags.items,
         });
         ret.root_module.addCSourceFiles(.{
-            .root = .{ .cwd_relative = root() },
+            .root = b.graph.cwdRelativePath(root()),
             .files = unix_srcs,
             .flags = flags.items,
         });
     }
 
     ret.root_module.addCSourceFiles(.{
-        .root = .{ .cwd_relative = root() },
+        .root = b.graph.cwdRelativePath(root()),
         .files = pcre_srcs,
         .flags = &.{
             "-DLINK_SIZE=2",
@@ -104,12 +104,12 @@ pub fn create(
         },
     });
 
-    ret.root_module.addIncludePath(.{ .cwd_relative = include_dir });
-    ret.root_module.addIncludePath(.{ .cwd_relative = root_path ++ "libgit2/src/libgit2" });
-    ret.root_module.addIncludePath(.{ .cwd_relative = root_path ++ "libgit2/src/util" });
-    ret.root_module.addIncludePath(.{ .cwd_relative = root_path ++ "libgit2/deps/pcre" });
-    ret.root_module.addIncludePath(.{ .cwd_relative = root_path ++ "libgit2/deps/xdiff" });
-    ret.root_module.addIncludePath(.{ .cwd_relative = root_path ++ "libgit2/deps/llhttp" });
+    ret.root_module.addIncludePath(b.graph.cwdRelativePath(include_dir));
+    ret.root_module.addIncludePath(b.graph.cwdRelativePath(root_path ++ "libgit2/src/libgit2"));
+    ret.root_module.addIncludePath(b.graph.cwdRelativePath(root_path ++ "libgit2/src/util"));
+    ret.root_module.addIncludePath(b.graph.cwdRelativePath(root_path ++ "libgit2/deps/pcre"));
+    ret.root_module.addIncludePath(b.graph.cwdRelativePath(root_path ++ "libgit2/deps/xdiff"));
+    ret.root_module.addIncludePath(b.graph.cwdRelativePath(root_path ++ "libgit2/deps/llhttp"));
     ret.root_module.link_libc = true;
 
     return .{ .step = ret };
