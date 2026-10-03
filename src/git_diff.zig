@@ -207,7 +207,7 @@ pub fn GitDiff(comptime Widget: type) type {
             var in_header = true;
             while (start < display_text.len) {
                 // each span keeps its trailing newline so the text box still breaks there
-                const end = if (std.mem.indexOfScalarPos(u8, display_text, start, '\n')) |nl| nl + 1 else display_text.len;
+                const end = if (std.mem.findScalarPos(u8, display_text, start, '\n')) |nl| nl + 1 else display_text.len;
                 const line = display_text[start..end];
                 if (std.mem.startsWith(u8, line, "@@")) in_header = false;
                 const style: wgt.Style = if (in_header)

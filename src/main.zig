@@ -16,9 +16,7 @@ const g_log = @import("./git_log.zig");
 const g_stat = @import("./git_status.zig");
 const g_ui = @import("./git_ui.zig");
 
-pub const c = @cImport({
-    @cInclude("git2.h");
-});
+pub const c = @import("c");
 
 // cook the terminal before a panic/segfault trace is printed, so the trace
 // isn't mangled by raw mode and the alternate buffer
@@ -92,10 +90,10 @@ pub fn main(init: std.process.Init.Minimal) !void {
     defer _ = c.git_libgit2_shutdown();
 
     // init allocator
-    var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
-    const allocator = if (builtin.mode == .Debug) debug_allocator.allocator() else std.heap.smp_allocator;
-    defer if (builtin.mode == .Debug) {
-        _ = debug_allocator.deinit();
+    var safe_allocator: std.heap.SafeAllocator = .init(std.heap.page_allocator, .{});
+    const allocator = if (builtin.optimize == .debug) safe_allocator.allocator() else std.heap.smp_allocator;
+    defer if (builtin.optimize == .debug) {
+        _ = safe_allocator.deinit();
     };
 
     // init io

@@ -2,6 +2,7 @@ const std = @import("std");
 const libgit2 = @import("deps/libgit2.zig");
 const zlib = @import("deps/zlib.zig");
 const mbedtls = @import("deps/mbedtls.zig");
+const Translator = @import("translate_c").Translator;
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
@@ -14,6 +15,14 @@ pub fn build(b: *std.Build) !void {
     tls.link(git2.step);
     z.link(git2.step);
 
+    const translator: Translator = .init(b.dependency("translate_c", .{}), .{
+        .c_source_file = b.path("deps/libgit2/include/git2.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    translator.addIncludePath(b.path("deps/libgit2/include"));
+    translator.linkLibrary(git2.step);
+
     {
         const exe = b.addExecutable(.{
             .name = "radargit",
@@ -24,17 +33,13 @@ pub fn build(b: *std.Build) !void {
             }),
             .use_llvm = true,
         });
-        exe.root_module.link_libc = true;
-        exe.root_module.addIncludePath(b.path("deps/libgit2/include"));
-        exe.root_module.linkLibrary(git2.step);
+        exe.root_module.addImport("c", translator.mod);
         exe.root_module.addImport("xitui", b.dependency("xitui", .{}).module("xitui"));
         b.installArtifact(exe);
 
         const run_cmd = b.addRunArtifact(exe);
         run_cmd.step.dependOn(b.getInstallStep());
-        if (b.args) |args| {
-            run_cmd.addArgs(args);
-        }
+        run_cmd.addPassthruArgs();
         const run_step = b.step("run", "Run the app");
         run_step.dependOn(&run_cmd.step);
     }
@@ -47,9 +52,7 @@ pub fn build(b: *std.Build) !void {
                 .optimize = optimize,
             }),
         });
-        unit_tests.root_module.link_libc = true;
-        unit_tests.root_module.addIncludePath(b.path("deps/libgit2/include"));
-        unit_tests.root_module.linkLibrary(git2.step);
+        unit_tests.root_module.addImport("c", translator.mod);
         unit_tests.root_module.addImport("xitui", b.dependency("xitui", .{}).module("xitui"));
 
         const run_unit_tests = b.addRunArtifact(unit_tests);

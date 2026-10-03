@@ -20,8 +20,8 @@ pub fn GitUITabs(comptime Widget: type) type {
             var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
             errdefer box.deinit(allocator);
 
-            inline for (@typeInfo(FocusKind).@"enum".fields) |focus_kind_field| {
-                const focus_kind: FocusKind = @enumFromInt(focus_kind_field.value);
+            inline for (@typeInfo(FocusKind).@"enum".field_values) |focus_kind_value| {
+                const focus_kind: FocusKind = @enumFromInt(focus_kind_value);
                 const name = switch (focus_kind) {
                     .log => "log",
                     .status => "status",
@@ -112,8 +112,8 @@ pub fn GitUI(comptime Widget: type) type {
             var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
             errdefer box.deinit(allocator);
 
-            inline for (@typeInfo(FocusKind).@"enum".fields) |focus_kind_field| {
-                const focus_kind: FocusKind = @enumFromInt(focus_kind_field.value);
+            inline for (@typeInfo(FocusKind).@"enum".field_values) |focus_kind_value| {
+                const focus_kind: FocusKind = @enumFromInt(focus_kind_value);
                 switch (focus_kind) {
                     .tabs => {
                         var git_ui_tabs = try GitUITabs(Widget).init(allocator);
