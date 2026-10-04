@@ -37,7 +37,7 @@ pub fn GitCommitList(comptime Widget: type) type {
                 var commits: std.ArrayList(?*c.git_commit) = .empty;
                 errdefer commits.deinit(allocator);
 
-                var inner_box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
+                var inner_box = try wgt.Box(Widget).init(allocator, .{ .border = null, .direction = .vert });
                 errdefer inner_box.deinit(allocator);
 
                 // init scroll
@@ -75,7 +75,7 @@ pub fn GitCommitList(comptime Widget: type) type {
             const children = &self.scroll.child.box.children;
             for (children.keys(), children.values()) |id, *commit| {
                 const selected = self.getFocus().child_id == id;
-                commit.widget.text_box.options.border_style = if (selected) .single else .hidden;
+                commit.widget.text_box.options.border = if (selected) .single else .hidden;
                 commit.widget.text_box.options.invert = selected;
             }
             try self.scroll.build(allocator, constraint, root_focus);
@@ -164,7 +164,7 @@ pub fn GitCommitList(comptime Widget: type) type {
 
                         const inner_box = &self.scroll.child.box;
                         const line = std.mem.sliceTo(std.mem.sliceTo(c.git_commit_message(commit), 0), '\n');
-                        var text_box = try wgt.TextBox.init(allocator, line, .{ .border_style = .hidden, .wrap_kind = .word, .detect_links = true });
+                        var text_box = try wgt.TextBox.init(allocator, line, .{ .border = .hidden, .wrap_kind = .word, .detect_links = true });
                         errdefer text_box.deinit(allocator);
                         text_box.getFocus().mode = .all;
                         try inner_box.children.put(allocator, text_box.getFocus().id, .{
@@ -199,7 +199,7 @@ pub fn GitLog(comptime Widget: type) type {
         const diff_min_width: usize = 60;
 
         pub fn init(allocator: std.mem.Allocator, repo: ?*c.git_repository) !GitLog(Widget) {
-            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border = null, .direction = .horiz });
             errdefer box.deinit(allocator);
 
             // add commit list

@@ -17,16 +17,16 @@ pub fn GitUITabs(comptime Widget: type) type {
         const FocusKind = enum { log, status };
 
         pub fn init(allocator: std.mem.Allocator) !GitUITabs(Widget) {
-            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border = null, .direction = .horiz });
             errdefer box.deinit(allocator);
 
             inline for (@typeInfo(FocusKind).@"enum".field_values) |focus_kind_value| {
-                const focus_kind: FocusKind = @enumFromInt(focus_kind_value);
+                const focus_kind: FocusKind = @fromBackingInt(@intCast(focus_kind_value));
                 const name = switch (focus_kind) {
                     .log => "log",
                     .status => "status",
                 };
-                var text_box = try wgt.TextBox.init(allocator, name, .{ .border_style = .single, .wrap_kind = .none });
+                var text_box = try wgt.TextBox.init(allocator, name, .{ .border = .single, .wrap_kind = .none });
                 errdefer text_box.deinit(allocator);
                 text_box.getFocus().mode = .all;
                 try box.children.put(allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
@@ -47,7 +47,7 @@ pub fn GitUITabs(comptime Widget: type) type {
             self.clearGrid();
             for (self.box.children.keys(), self.box.children.values()) |id, *tab| {
                 const selected = self.getFocus().child_id == id;
-                tab.widget.text_box.options.border_style = if (selected) .single else .hidden;
+                tab.widget.text_box.options.border = if (selected) .single else .hidden;
                 tab.widget.text_box.options.invert = selected;
             }
             try self.box.build(allocator, constraint, root_focus);
@@ -109,11 +109,11 @@ pub fn GitUI(comptime Widget: type) type {
         const FocusKind = enum { tabs, stack };
 
         pub fn init(allocator: std.mem.Allocator, repo: ?*c.git_repository) !GitUI(Widget) {
-            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border = null, .direction = .vert });
             errdefer box.deinit(allocator);
 
             inline for (@typeInfo(FocusKind).@"enum".field_values) |focus_kind_value| {
-                const focus_kind: FocusKind = @enumFromInt(focus_kind_value);
+                const focus_kind: FocusKind = @fromBackingInt(@intCast(focus_kind_value));
                 switch (focus_kind) {
                     .tabs => {
                         var git_ui_tabs = try GitUITabs(Widget).init(allocator);
@@ -154,8 +154,8 @@ pub fn GitUI(comptime Widget: type) type {
 
         pub fn build(self: *GitUI(Widget), allocator: std.mem.Allocator, constraint: layout.Constraint, root_focus: *Focus) !void {
             self.clearGrid();
-            const git_ui_tabs = &self.box.children.values()[@intFromEnum(FocusKind.tabs)].widget.git_ui_tabs;
-            const git_ui_stack = &self.box.children.values()[@intFromEnum(FocusKind.stack)].widget.stack;
+            const git_ui_tabs = &self.box.children.values()[@backingInt(FocusKind.tabs)].widget.git_ui_tabs;
+            const git_ui_stack = &self.box.children.values()[@backingInt(FocusKind.stack)].widget.stack;
             if (git_ui_tabs.getSelectedIndex()) |index| {
                 git_ui_stack.getFocus().child_id = git_ui_stack.children.keys()[index];
             }
@@ -192,14 +192,14 @@ pub fn GitUI(comptime Widget: type) type {
                                         switch (selected_widget.*) {
                                             .git_log => {
                                                 if (selected_widget.git_log.scrolledToTop()) {
-                                                    index = @intFromEnum(FocusKind.tabs);
+                                                    index = @backingInt(FocusKind.tabs);
                                                 } else {
                                                     try child.input(allocator, key, root_focus);
                                                 }
                                             },
                                             .git_status => {
                                                 if (selected_widget.git_status.getSelectedIndex() == 0) {
-                                                    index = @intFromEnum(FocusKind.tabs);
+                                                    index = @backingInt(FocusKind.tabs);
                                                 } else {
                                                     try child.input(allocator, key, root_focus);
                                                 }
@@ -214,7 +214,7 @@ pub fn GitUI(comptime Widget: type) type {
                         .down => {
                             switch (child.*) {
                                 .git_ui_tabs => {
-                                    index = @intFromEnum(FocusKind.stack);
+                                    index = @backingInt(FocusKind.stack);
                                 },
                                 .stack => {
                                     try child.input(allocator, key, root_focus);

@@ -50,13 +50,13 @@ pub fn GitStatusListItem(comptime Widget: type) type {
                 },
                 .not_tracked => "?",
             };
-            var status_text = try wgt.TextBox.init(allocator, status_kind_sym, .{ .border_style = .hidden, .wrap_kind = .none });
+            var status_text = try wgt.TextBox.init(allocator, status_kind_sym, .{ .border = .hidden, .wrap_kind = .none });
             errdefer status_text.deinit(allocator);
 
-            var path_text = try wgt.TextBox.init(allocator, status.path, .{ .border_style = .hidden, .wrap_kind = .none });
+            var path_text = try wgt.TextBox.init(allocator, status.path, .{ .border = .hidden, .wrap_kind = .none });
             errdefer path_text.deinit(allocator);
 
-            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border = null, .direction = .horiz });
             errdefer box.deinit(allocator);
             try box.children.put(allocator, status_text.getFocus().id, .{ .widget = .{ .text_box = status_text }, .rect = null, .min_size = null });
             try box.children.put(allocator, path_text.getFocus().id, .{ .widget = .{ .text_box = path_text }, .rect = null, .min_size = null });
@@ -94,8 +94,8 @@ pub fn GitStatusListItem(comptime Widget: type) type {
             return self.box.getFocus();
         }
 
-        pub fn setBorder(self: *GitStatusListItem(Widget), border_style: ?wgt.BorderStyle) void {
-            self.box.children.values()[1].widget.text_box.options.border_style = border_style;
+        pub fn setBorder(self: *GitStatusListItem(Widget), border: ?wgt.Border) void {
+            self.box.children.values()[1].widget.text_box.options.border = border;
         }
 
         pub fn setInverted(self: *GitStatusListItem(Widget), inverted: bool) void {
@@ -111,7 +111,7 @@ pub fn GitStatusList(comptime Widget: type) type {
 
         pub fn init(allocator: std.mem.Allocator, statuses: []Status) !GitStatusList(Widget) {
             // init inner_box
-            var inner_box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
+            var inner_box = try wgt.Box(Widget).init(allocator, .{ .border = null, .direction = .vert });
             errdefer inner_box.deinit(allocator);
             for (statuses) |item| {
                 var list_item = try GitStatusListItem(Widget).init(allocator, item);
@@ -203,18 +203,18 @@ pub fn GitStatusTabs(comptime Widget: type) type {
         const tab_count = @typeInfo(IndexKind).@"enum".field_values.len;
 
         pub fn init(allocator: std.mem.Allocator, statuses: []Status) !GitStatusTabs(Widget) {
-            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border = null, .direction = .horiz });
             errdefer box.deinit(allocator);
 
             var counts: [tab_count]usize = @splat(0);
             for (statuses) |status| {
-                counts[@intFromEnum(status.kind)] += 1;
+                counts[@backingInt(status.kind)] += 1;
             }
 
             var selected_maybe: ?IndexKind = null;
 
             inline for (@typeInfo(IndexKind).@"enum".field_values, 0..) |value, i| {
-                const index_kind: IndexKind = @enumFromInt(value);
+                const index_kind: IndexKind = @fromBackingInt(@intCast(value));
                 if (selected_maybe == null and counts[i] > 0) {
                     selected_maybe = index_kind;
                 }
@@ -225,14 +225,14 @@ pub fn GitStatusTabs(comptime Widget: type) type {
                 };
                 var label_buf: [64]u8 = undefined;
                 const label = try std.mem.print(&label_buf, "{s} ({})", .{ name, counts[i] });
-                var text_box = try wgt.TextBox.init(allocator, label, .{ .border_style = .single, .wrap_kind = .none });
+                var text_box = try wgt.TextBox.init(allocator, label, .{ .border = .single, .wrap_kind = .none });
                 errdefer text_box.deinit(allocator);
                 text_box.getFocus().mode = .all;
                 try box.children.put(allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
             }
 
             var git_status_tabs = GitStatusTabs(Widget){ .box = box };
-            git_status_tabs.getFocus().child_id = box.children.keys()[@intFromEnum(selected_maybe orelse .added)];
+            git_status_tabs.getFocus().child_id = box.children.keys()[@backingInt(selected_maybe orelse .added)];
             return git_status_tabs;
         }
 
@@ -244,7 +244,7 @@ pub fn GitStatusTabs(comptime Widget: type) type {
             self.clearGrid();
             for (self.box.children.keys(), self.box.children.values()) |id, *tab| {
                 const selected = self.getFocus().child_id == id;
-                tab.widget.text_box.options.border_style = if (selected) .single else .hidden;
+                tab.widget.text_box.options.border = if (selected) .single else .hidden;
                 tab.widget.text_box.options.invert = selected;
             }
             try self.box.build(allocator, constraint, root_focus);
@@ -318,11 +318,11 @@ pub fn GitStatusContent(comptime Widget: type) type {
                 }
             }
 
-            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .horiz });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border = null, .direction = .horiz });
             errdefer box.deinit(allocator);
 
             inline for (@typeInfo(FocusKind).@"enum".field_values) |focus_kind_value| {
-                const focus_kind: FocusKind = @enumFromInt(focus_kind_value);
+                const focus_kind: FocusKind = @fromBackingInt(@intCast(focus_kind_value));
                 switch (focus_kind) {
                     .status_list => {
                         var status_list = try GitStatusList(Widget).init(allocator, filtered_statuses.items);
@@ -375,8 +375,8 @@ pub fn GitStatusContent(comptime Widget: type) type {
                         break :blk current_index;
                     };
 
-                    if (index == @intFromEnum(FocusKind.diff) and self.box.children.values()[@intFromEnum(FocusKind.diff)].widget.git_diff.isEmpty()) {
-                        index = @intFromEnum(FocusKind.status_list);
+                    if (index == @backingInt(FocusKind.diff) and self.box.children.values()[@backingInt(FocusKind.diff)].widget.git_diff.isEmpty()) {
+                        index = @backingInt(FocusKind.status_list);
                     }
 
                     if (index != current_index) {
@@ -552,11 +552,11 @@ pub fn GitStatus(comptime Widget: type) type {
             }
 
             // init box
-            var box = try wgt.Box(Widget).init(allocator, .{ .border_style = null, .direction = .vert });
+            var box = try wgt.Box(Widget).init(allocator, .{ .border = null, .direction = .vert });
             errdefer box.deinit(allocator);
 
             inline for (@typeInfo(FocusKind).@"enum".field_values) |focus_kind_value| {
-                const focus_kind: FocusKind = @enumFromInt(focus_kind_value);
+                const focus_kind: FocusKind = @fromBackingInt(@intCast(focus_kind_value));
                 switch (focus_kind) {
                     .status_tabs => {
                         var status_tabs = try GitStatusTabs(Widget).init(allocator, statuses.items);
@@ -568,7 +568,7 @@ pub fn GitStatus(comptime Widget: type) type {
                         errdefer stack.deinit(allocator);
 
                         inline for (@typeInfo(IndexKind).@"enum".field_values) |index_kind_value| {
-                            const index_kind: IndexKind = @enumFromInt(index_kind_value);
+                            const index_kind: IndexKind = @fromBackingInt(@intCast(index_kind_value));
                             var status_content = try GitStatusContent(Widget).init(allocator, repo, statuses.items, index_kind);
                             errdefer status_content.deinit(allocator);
                             try stack.children.put(allocator, status_content.getFocus().id, .{ .git_status_content = status_content });
@@ -596,8 +596,8 @@ pub fn GitStatus(comptime Widget: type) type {
 
         pub fn build(self: *GitStatus(Widget), allocator: std.mem.Allocator, constraint: layout.Constraint, root_focus: *Focus) !void {
             self.clearGrid();
-            const status_tabs = &self.box.children.values()[@intFromEnum(FocusKind.status_tabs)].widget.git_status_tabs;
-            const stack = &self.box.children.values()[@intFromEnum(FocusKind.status_content)].widget.stack;
+            const status_tabs = &self.box.children.values()[@backingInt(FocusKind.status_tabs)].widget.git_status_tabs;
+            const stack = &self.box.children.values()[@backingInt(FocusKind.status_content)].widget.stack;
             if (status_tabs.getSelectedIndex()) |index| {
                 stack.getFocus().child_id = stack.children.keys()[index];
             }
@@ -627,7 +627,7 @@ pub fn GitStatus(comptime Widget: type) type {
                             .git_status_tabs => {
                                 const status_tabs = &child.git_status_tabs;
                                 if (direction == .down) {
-                                    break :blk @intFromEnum(FocusKind.status_content);
+                                    break :blk @backingInt(FocusKind.status_content);
                                 } else {
                                     try status_tabs.input(allocator, key, root_focus);
                                 }
@@ -636,7 +636,7 @@ pub fn GitStatus(comptime Widget: type) type {
                                 const stack = &child.stack;
                                 if (stack.getSelected()) |selected_widget| {
                                     if (direction == .up and selected_widget.git_status_content.scrolledToTop()) {
-                                        break :blk @intFromEnum(FocusKind.status_tabs);
+                                        break :blk @backingInt(FocusKind.status_tabs);
                                     } else {
                                         try stack.input(allocator, key, root_focus);
                                     }
@@ -647,10 +647,10 @@ pub fn GitStatus(comptime Widget: type) type {
                         break :blk current_index;
                     };
 
-                    if (index == @intFromEnum(FocusKind.status_content)) {
-                        if (self.box.children.values()[@intFromEnum(FocusKind.status_content)].widget.stack.getSelected()) |selected_widget| {
+                    if (index == @backingInt(FocusKind.status_content)) {
+                        if (self.box.children.values()[@backingInt(FocusKind.status_content)].widget.stack.getSelected()) |selected_widget| {
                             if (selected_widget.git_status_content.getGrid() == null) {
-                                index = @intFromEnum(FocusKind.status_tabs);
+                                index = @backingInt(FocusKind.status_tabs);
                             }
                         }
                     }
