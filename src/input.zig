@@ -24,14 +24,9 @@ pub fn vertIndex(key: Key, current_index: usize, count: usize, grid_maybe: ?Grid
                 return @min(current_index + half_count, count - 1);
             }
         },
-        .mouse => |mouse| switch (mouse.action) {
-            .scroll => |dir| switch (dir) {
-                .up => return current_index -| 1,
-                .down => if (current_index + 1 < count) {
-                    return current_index + 1;
-                },
-            },
-            else => {},
+        .scroll_up => return current_index -| 1,
+        .scroll_down => if (current_index + 1 < count) {
+            return current_index + 1;
         },
         else => {},
     }
