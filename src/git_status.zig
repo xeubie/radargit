@@ -228,7 +228,8 @@ pub fn GitStatusTabs(comptime Widget: type) type {
                 var text_box = try wgt.TextBox.init(allocator, label, .{ .border = .single, .wrap_kind = .none });
                 errdefer text_box.deinit(allocator);
                 text_box.getFocus().mode = .all;
-                try box.children.put(allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = null });
+                // a min size makes the box keep the focused tab on screen when narrow
+                try box.children.put(allocator, text_box.getFocus().id, .{ .widget = .{ .text_box = text_box }, .rect = null, .min_size = .{ .width = label.len + 2, .height = null } });
             }
 
             var git_status_tabs = GitStatusTabs(Widget){ .box = box };
