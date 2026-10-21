@@ -47,13 +47,12 @@ pub fn GitDiff(comptime Widget: type) type {
             try self.box.build(allocator, constraint, root_focus);
 
             // add another diff if necessary
-            if (self.box.children.values()[0].widget.scroll.grid) |scroll_grid| {
+            if (self.box.children.values()[0].widget.scroll.viewport) |viewport| {
                 const scroll_y = self.box.children.values()[0].widget.scroll.y;
                 const u_scroll_y: usize = if (scroll_y >= 0) @intCast(scroll_y) else 0;
-                if (self.box.children.values()[0].widget.scroll.child.box.grid) |inner_box_grid| {
-                    const inner_box_height = inner_box_grid.size.height;
+                if (self.box.children.values()[0].widget.scroll.content_size) |content| {
                     const min_scroll_remaining = 5;
-                    if (inner_box_height -| (scroll_grid.size.height + u_scroll_y) <= min_scroll_remaining) {
+                    if (content.height -| (viewport.height + u_scroll_y) <= min_scroll_remaining) {
                         if (self.diff_count < self.patches.items.len) {
                             try self.addDiff(allocator, self.patches.items[self.diff_count]);
                         }
@@ -72,12 +71,11 @@ pub fn GitDiff(comptime Widget: type) type {
                     }
                 },
                 .arrow_down => {
-                    if (self.box.children.values()[0].widget.scroll.grid) |scroll_grid| {
+                    if (self.box.children.values()[0].widget.scroll.viewport) |viewport| {
                         const scroll_y = self.box.children.values()[0].widget.scroll.y;
                         const u_scroll_y: usize = if (scroll_y >= 0) @intCast(scroll_y) else 0;
-                        if (self.box.children.values()[0].widget.scroll.child.box.grid) |inner_box_grid| {
-                            const inner_box_height = inner_box_grid.size.height;
-                            if (scroll_grid.size.height + u_scroll_y < inner_box_height) {
+                        if (self.box.children.values()[0].widget.scroll.content_size) |content| {
+                            if (viewport.height + u_scroll_y < content.height) {
                                 self.box.children.values()[0].widget.scroll.y += 1;
                             }
                         }
@@ -89,12 +87,11 @@ pub fn GitDiff(comptime Widget: type) type {
                     }
                 },
                 .arrow_right => {
-                    if (self.box.children.values()[0].widget.scroll.grid) |scroll_grid| {
+                    if (self.box.children.values()[0].widget.scroll.viewport) |viewport| {
                         const scroll_x = self.box.children.values()[0].widget.scroll.x;
                         const u_scroll_x: usize = if (scroll_x >= 0) @intCast(scroll_x) else 0;
-                        if (self.box.children.values()[0].widget.scroll.child.box.grid) |inner_box_grid| {
-                            const inner_box_width = inner_box_grid.size.width;
-                            if (scroll_grid.size.width + u_scroll_x < inner_box_width) {
+                        if (self.box.children.values()[0].widget.scroll.content_size) |content| {
+                            if (viewport.width + u_scroll_x < content.width) {
                                 self.box.children.values()[0].widget.scroll.x += 1;
                             }
                         }
@@ -104,28 +101,26 @@ pub fn GitDiff(comptime Widget: type) type {
                     self.box.children.values()[0].widget.scroll.y = 0;
                 },
                 .end => {
-                    if (self.box.children.values()[0].widget.scroll.grid) |scroll_grid| {
-                        if (self.box.children.values()[0].widget.scroll.child.box.grid) |inner_box_grid| {
-                            const inner_box_height = inner_box_grid.size.height;
-                            const max_scroll: isize = @intCast(inner_box_height -| scroll_grid.size.height);
+                    if (self.box.children.values()[0].widget.scroll.viewport) |viewport| {
+                        if (self.box.children.values()[0].widget.scroll.content_size) |content| {
+                            const max_scroll: isize = @intCast(content.height -| viewport.height);
                             self.box.children.values()[0].widget.scroll.y = max_scroll;
                         }
                     }
                 },
                 .page_up => {
-                    if (self.box.children.values()[0].widget.scroll.grid) |scroll_grid| {
+                    if (self.box.children.values()[0].widget.scroll.viewport) |viewport| {
                         const scroll_y = self.box.children.values()[0].widget.scroll.y;
-                        const scroll_change: isize = @intCast(scroll_grid.size.height / 2);
+                        const scroll_change: isize = @intCast(viewport.height / 2);
                         self.box.children.values()[0].widget.scroll.y = @max(0, scroll_y - scroll_change);
                     }
                 },
                 .page_down => {
-                    if (self.box.children.values()[0].widget.scroll.grid) |scroll_grid| {
-                        if (self.box.children.values()[0].widget.scroll.child.box.grid) |inner_box_grid| {
-                            const inner_box_height = inner_box_grid.size.height;
-                            const max_scroll: isize = @intCast(inner_box_height - scroll_grid.size.height);
+                    if (self.box.children.values()[0].widget.scroll.viewport) |viewport| {
+                        if (self.box.children.values()[0].widget.scroll.content_size) |content| {
+                            const max_scroll: isize = @intCast(content.height - viewport.height);
                             const scroll_y = self.box.children.values()[0].widget.scroll.y;
-                            const scroll_change: isize = @intCast(scroll_grid.size.height / 2);
+                            const scroll_change: isize = @intCast(viewport.height / 2);
                             self.box.children.values()[0].widget.scroll.y = @min(scroll_y + scroll_change, max_scroll);
                         }
                     }
@@ -136,12 +131,11 @@ pub fn GitDiff(comptime Widget: type) type {
                     }
                 },
                 .scroll_down => {
-                    if (self.box.children.values()[0].widget.scroll.grid) |scroll_grid| {
+                    if (self.box.children.values()[0].widget.scroll.viewport) |viewport| {
                         const scroll_y = self.box.children.values()[0].widget.scroll.y;
                         const u_scroll_y: usize = if (scroll_y >= 0) @intCast(scroll_y) else 0;
-                        if (self.box.children.values()[0].widget.scroll.child.box.grid) |inner_box_grid| {
-                            const inner_box_height = inner_box_grid.size.height;
-                            if (scroll_grid.size.height + u_scroll_y < inner_box_height) {
+                        if (self.box.children.values()[0].widget.scroll.content_size) |content| {
+                            if (viewport.height + u_scroll_y < content.height) {
                                 self.box.children.values()[0].widget.scroll.y += 1;
                             }
                         }
@@ -208,9 +202,9 @@ pub fn GitDiff(comptime Widget: type) type {
                 const style: wgt.Style = if (in_header)
                     .{ .bold = true }
                 else if (std.mem.startsWith(u8, line, "+"))
-                    .{ .fg = .{ .ansi = .green } }
+                    .{ .fg = .ansi(.green) }
                 else if (std.mem.startsWith(u8, line, "-"))
-                    .{ .fg = .{ .ansi = .red } }
+                    .{ .fg = .ansi(.red) }
                 else
                     .{};
                 try spans.append(allocator, .{ .text = line, .style = style });
